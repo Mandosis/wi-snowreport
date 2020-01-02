@@ -35,7 +35,10 @@ namespace SnowReport
 
             var paramTokens = decodedBody.Split("&");
             var bodyParams = new Dictionary<string, string>();
-            
+
+            var bodyText = bodyParams["Body"];
+            var from = bodyParams["From"];
+
 
             foreach (var token in paramTokens)
             {
@@ -44,61 +47,10 @@ namespace SnowReport
             }
 
             // Add incoming number to white list table
-            if (bodyParams["Body"].ToUpper() == "RIDE")
-            {
-                var rowKey = Utilities.GetNewRowKey();
-                
-                var query = new TableQuery<SmsNumberEntity>()
-                    .Where(TableQuery.GenerateFilterCondition("PhoneNumber",
-                        QueryComparisons.Equal, bodyParams["From"]));
-                var querySegments = await smsNumberTable.ExecuteQuerySegmentedAsync(query, null);
-                var results = querySegments.Results;
+            if (bodyText.ToUpper() == "RIDE") return await StartUpdates(smsNumberTable, snowReportTable, from);
 
-                if (results.Any())
-                {
-                    var row = results.First();
-                    row.Status = "Active";
-                    var tableOp = TableOperation.Replace(row);
-                    await smsNumberTable.ExecuteAsync(tableOp);
-                }
-                else
-                {
-                    var incomingNumber = new SmsNumberEntity()
-                    {
-                        PartitionKey = "Version 1",
-                        RowKey = Utilities.GetNewRowKey(),
-                        PhoneNumber = bodyParams["From"],
-                        Status = "Active"
-                    };
+            if (bodyText == "STOP") return await StopUpdates(smsNumberTable, from);
 
-                    var operation = TableOperation.Insert(incomingNumber);
-                    await smsNumberTable.ExecuteAsync(operation);
-                }
-
-                await SendLatestUpdate(snowReportTable, bodyParams["From"]);
-            }
-
-            if (bodyParams["Body"] == "STOP")
-            {
-                var query = new TableQuery<SmsNumberEntity>()
-                    .Where(TableQuery.GenerateFilterCondition("PhoneNumber", 
-                        QueryComparisons.Equal, bodyParams["From"]));
-
-                var results = await smsNumberTable.ExecuteQuerySegmentedAsync(query, null);
-                
-                if (!results.Results.Any())
-                {
-                    return new OkResult();
-                }
-                
-                // Set status to stopped in table
-                var match = results.Results.First();
-
-                match.Status = "Inactive";
-
-                var operation = TableOperation.Replace(match);
-                await smsNumberTable.ExecuteAsync(operation);
-            }
 
             return new OkResult();
             
@@ -113,7 +65,64 @@ namespace SnowReport
             var latestReport = queryResults.Results.First();
             await SmsMessaging.SendReport(smsNumber, latestReport);
         }
-        
+
+        private static async Task<ActionResult> StartUpdates(CloudTable smsNumberTable, CloudTable snowReportTable, string phoneNumber)
+        {
+            var query = new TableQuery<SmsNumberEntity>()
+                .Where(TableQuery.GenerateFilterCondition("PhoneNumber",
+                    QueryComparisons.Equal, phoneNumber));
+            var querySegments = await smsNumberTable.ExecuteQuerySegmentedAsync(query, null);
+            var results = querySegments.Results;
+
+            if (results.Any())
+            {
+                var row = results.First();
+                row.Status = "Active";
+                var tableOp = TableOperation.Replace(row);
+                await smsNumberTable.ExecuteAsync(tableOp);
+            }
+            else
+            {
+                var incomingNumber = new SmsNumberEntity()
+                {
+                    PartitionKey = "Version 1",
+                    RowKey = Utilities.GetNewRowKey(),
+                    PhoneNumber = phoneNumber,
+                    Status = "Active"
+                };
+
+                var operation = TableOperation.Insert(incomingNumber);
+                await smsNumberTable.ExecuteAsync(operation);
+            }
+
+            await SendLatestUpdate(snowReportTable, phoneNumber);
+            
+            return new OkResult();
+        }
+
+        private static async Task<ActionResult> StopUpdates(CloudTable smsNumberTable, string phoneNumber)
+        {
+            var query = new TableQuery<SmsNumberEntity>()
+                .Where(TableQuery.GenerateFilterCondition("PhoneNumber", 
+                    QueryComparisons.Equal, phoneNumber));
+
+            var results = await smsNumberTable.ExecuteQuerySegmentedAsync(query, null);
+                
+            if (!results.Results.Any())
+            {
+                return new OkResult();
+            }
+                
+            // Set status to stopped in table
+            var match = results.Results.First();
+
+            match.Status = "Inactive";
+
+            var operation = TableOperation.Replace(match);
+            await smsNumberTable.ExecuteAsync(operation);
+
+            return new OkResult();
+        }
 
     }
 }
