@@ -6,6 +6,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 using RestSharp;
+using SnowReport.Messaging;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 
@@ -20,15 +21,17 @@ namespace SnowReport
         {
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
             
-            var accountSid = Environment.GetEnvironmentVariable("TwilioAccountSid");
-            var authToken = Environment.GetEnvironmentVariable("TwilioAuthToken");
-
+            // TODO: Refactor into Travel Wisconsin Client
             var client = new RestClient("https://www.travelwisconsin.com/snowreport/reportdetails");
-            var request = new RestRequest(Method.POST);
-            request.AddParameter("id", "1671");
-            request.AddParameter("reportType", "snowmobile");
+            
+            var request = new RestRequest(Method.POST)
+                .AddParameter("id", "1671")
+                .AddParameter("reportType", "snowmobile");
+            
             var response = await client.ExecuteTaskAsync<SnowmobileReportEntity>(request);
             
+            
+            // TODO: Refactor into unified long term storage class
             var lastReportQuery = new TableQuery<SnowmobileReportEntity>()
                 .Where(TableQuery.GenerateFilterCondition("ModifiedDate", 
                     QueryComparisons.Equal,
@@ -44,7 +47,6 @@ namespace SnowReport
             } 
 
             log.LogInformation("Sending update via SMS...");
-            TwilioClient.Init(accountSid, authToken);
 
             var smsNumberQuery = new TableQuery<SmsNumberEntity>()
                 .Where(TableQuery.GenerateFilterCondition("Status", QueryComparisons.Equal, "Active"));
@@ -56,17 +58,7 @@ namespace SnowReport
             foreach (var smsNumber in smsNumbers)
             {
                 log.LogInformation($"Sending update to {smsNumber.PhoneNumber}");
-                
-                var message = MessageResource.Create(
-                    body: $"Snow Report Update\n\n" +
-                          $"Updated: {response.Data.ModifiedDate}\n" +
-                          $"Base: {response.Data.Base}\n" +
-                          $"Groomed: {response.Data.Groomed}\n" +
-                          $"Condition: {response.Data.Condition}\n\n" +
-                          $"{response.Data.Description}",
-                    from: new Twilio.Types.PhoneNumber("+13852357816"),
-                    to: new Twilio.Types.PhoneNumber(smsNumber.PhoneNumber)
-                );
+                await SmsMessaging.SendReport(smsNumber.PhoneNumber, response.Data);
             }
 
             log.LogInformation("Done.");

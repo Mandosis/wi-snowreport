@@ -12,6 +12,7 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
+using SnowReport.Messaging;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 
@@ -103,32 +104,16 @@ namespace SnowReport
             
         }
 
-        public static async Task SendLatestUpdate(CloudTable snowReportTable, string smsNumber)
+        private static async Task SendLatestUpdate(CloudTable snowReportTable, string smsNumber)
         {
             var latestUpdateQuery = new TableQuery<SnowmobileReportEntity>()
                 .Take(1);
 
             var queryResults = await snowReportTable.ExecuteQuerySegmentedAsync(latestUpdateQuery, null);
             var latestReport = queryResults.Results.First();
-                        
-            var accountSid = Environment.GetEnvironmentVariable("TwilioAccountSid");
-            var authToken = Environment.GetEnvironmentVariable("TwilioAuthToken");
-
-            TwilioClient.Init(accountSid, authToken);
-
-
-            MessageResource.Create(
-                body: $"Snow Report Update\n\n" +
-                      $"Updated: {latestReport.ModifiedDate}\n" +
-                      $"Base: {latestReport.Base}\n" +
-                      $"Groomed: {latestReport.Groomed}\n" +
-                      $"Condition: {latestReport.Condition}\n\n" +
-                      $"{latestReport.Description}",
-                from: new Twilio.Types.PhoneNumber("+13852357816"),
-                to: new Twilio.Types.PhoneNumber(smsNumber)
-            );
-
+            await SmsMessaging.SendReport(smsNumber, latestReport);
         }
+        
 
     }
 }
