@@ -29,22 +29,9 @@ namespace SnowReport
             log.LogInformation("C# HTTP trigger function processed a request.");
 
 
-            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-            var decodedBody = Uri.UnescapeDataString(requestBody);
-
-            var paramTokens = decodedBody.Split("&");
-            var bodyParams = new Dictionary<string, string>();
-
+            var bodyParams = await GetBodyParams(req.Body);
             var bodyText = bodyParams["Body"];
             var from = bodyParams["From"];
-
-
-            foreach (var token in paramTokens)
-            {
-                var parts = token.Split("=");
-                bodyParams.Add(parts[0], parts[1]);
-            }
 
             // Add incoming number to white list table
             if (bodyText.ToUpper() == "RIDE") return await StartUpdates(smsNumberTable, snowReportTable, from);
@@ -54,6 +41,25 @@ namespace SnowReport
 
             return new OkResult();
             
+        }
+        
+        // TODO: Refactor to return a class
+        private static async Task<Dictionary<string, string>> GetBodyParams(Stream body)
+        {
+            var requestBody = await new StreamReader(body).ReadToEndAsync();
+
+            var decodedBody = Uri.UnescapeDataString(requestBody);
+
+            var paramTokens = decodedBody.Split("&");
+            var bodyParams = new Dictionary<string, string>();
+            
+            foreach (var token in paramTokens)
+            {
+                var parts = token.Split("=");
+                bodyParams.Add(parts[0], parts[1]);
+            }
+
+            return bodyParams;
         }
 
         private static async Task SendLatestUpdate(CloudTable snowReportTable, string smsNumber)
