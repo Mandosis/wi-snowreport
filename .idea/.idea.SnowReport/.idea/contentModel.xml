@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\Chris\.Rider2019.3\config\extensions" t="IncludeRecursive" />
+    <e p="C:\Users\Chris\.Rider2019.3\config\scratches" t="IncludeRecursive" />
+    <e p="C:\Users\Chris\.Rider2019.3\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\Chris\.Rider2019.3\system\resharper-host\local\Transient\ReSharperHost\v193\SolutionCaches\_SnowReport.-594364486.00" t="ExcludeRecursive" />
+    <e p="C:\Users\Chris\Workspace\wi-snowreport" t="IncludeFlat">
+      <e p="packages" t="ExcludeRecursive" />
+      <e p="SnowReport" t="IncludeRecursive">
+        <e p=".gitignore" t="Include" />
+        <e p="bin\Debug\netcoreapp3.0\bin" t="ExcludeRecursive" />
+        <e p="DailyReport.cs" t="Include" />
+        <e p="host.json" t="Include" />
+        <e p="local.settings.json" t="Include" />
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="netcoreapp3.0" t="Include">
+              <e p="SnowReport.AssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="proxies.json" t="Include" />
+        <e p="SmsNumberEntity.cs" t="Include" />
+        <e p="SmsWebhook.cs" t="Include" />
+        <e p="SnowmobileReportEntity.cs" t="Include" />
+        <e p="SnowReport.csproj" t="IncludeRecursive" />
+        <e p="Utilities.cs" t="Include" />
+      </e>
+      <e p="SnowReport.sln" t="IncludeFlat" />
+    </e>
+  </component>
+</project>

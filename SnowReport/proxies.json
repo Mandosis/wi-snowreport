@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json.schemastore.org/proxies",
+  "proxies": {
+    "sms-webook": {
+      "matchCondition": {
+        "methods": [ "GET", "POST" ],
+        "route": "/webhooks/incoming/sms"
+      },
+      "backendUri": "https://crabuse-snowreport.azurewebsites.net/api/SmsRegister?code=5aM9HHfHSFh1sfZ2cbzgNC6m7r4Z1QAzQV6HDskf3rcKvMgJx7oCow=="
+    }
+  }
+}
