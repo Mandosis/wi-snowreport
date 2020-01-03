@@ -12,6 +12,7 @@ namespace SnowReport.Messaging
             // TODO: Get sending phone number from env. variable
             var accountSid = Utilities.GetEnvironmentVariable("TwilioAccountSid");
             var authToken = Utilities.GetEnvironmentVariable("TwilioAuthToken");
+            var decodedDescription = System.Web.HttpUtility.HtmlDecode(report.Description);
             
             TwilioClient.Init(accountSid, authToken);
             
@@ -21,7 +22,7 @@ namespace SnowReport.Messaging
                       $"Base: {report.Base}\n" +
                       $"Groomed: {report.Groomed}\n" +
                       $"Condition: {report.Condition}\n\n" +
-                      $"{report.Description}",
+                      $"{decodedDescription}",
                 from: new Twilio.Types.PhoneNumber("+13852357816"),
                 to: new Twilio.Types.PhoneNumber(phoneNumber)
             );
